@@ -4,7 +4,7 @@
 // ============================================================
 
 const http = require("http");
-const fs   = require("fs");
+const fs = require("fs");
 const path = require("path");
 const { WebSocketServer } = require("ws");
 
@@ -21,8 +21,8 @@ const httpServer = http.createServer((req, res) => {
   const ext = path.extname(filePath);
   const contentTypes = {
     ".html": "text/html",
-    ".css":  "text/css",
-    ".js":   "text/javascript",
+    ".css": "text/css",
+    ".js": "text/javascript",
   };
 
   fs.readFile(filePath, (err, data) => {
@@ -105,13 +105,54 @@ wss.on("connection", (socket) => {
 
       // Registra o cliente
       const cor = proximaCor();
-      clientes.set(socket, { username, color: cor});
+      clientes.set(socket, { username, color: cor });
 
       // Confirma para o cliente o ingresso
       enviar(socket, {
         tipo: "confirmacao",
         username: username,
         color: cor,
+      });
+
+      // Avisa todos da chegada
+      broadcast({
+        tipo: "sistema",
+        texto: `${username} entrou na sala.`,
+        usuarios: listaUsuarios(),
+      });
+    }
+
+    // Recebe mensagem de texto (bate papo)
+    if (msg.tipo === "mensagem") {
+      const cliente = clientes.get(socket);
+      if (!cliente) return;
+
+      const texto = String(msg.texto).trim().slice(0, 500);
+
+      if (!texto) return;
+
+      broadcast({
+        tipo: "mensagem",
+        username: cliente.username,
+        color: cliente.color,
+        texto: texto,
+        hora: new Date().toLocaleTimeString("pt-BR", {
+          hour: "2-digit", minute: "2-digit"
+        }),
+      });
+
+      // 4.2 - Cliente desconectou
+      socket.on("close", () => {
+        const cliente = clientes.get(socket);
+        if (!cliente) return;
+
+        clientes.delete(socket);
+
+        broadcast({
+          tipo: "sistema",
+          texto: `${cliente.username} saiu da sala.`,
+          usuarios: listaUsuarios(),
+        });
       });
     }
   });

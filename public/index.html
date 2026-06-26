@@ -207,14 +207,33 @@ console.log(msg);
   // 6. ATUALIZAR LISTA DE USUÁRIOS NA SIDEBAR
   // --------------------------------------------------------
   function atualizarListaUsuarios(usuarios) {
+    listaUsuarios.innerHTML = "";
+    contagemUsuarios.textContent = usuarios.length;
 
+    usuarios.forEach(({ username, color }) => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span class="status-dot"></span>
+        <span style="color:${color}">${escaparHTML(username)}</span>
+      `;
+      listaUsuarios.appendChild(li);
+    });
   }
 
   // --------------------------------------------------------
   // 7. ENVIAR MENSAGEM
   // --------------------------------------------------------
   function enviarMensagem() {
+    const texto = inputMsg.value.trim();
+    if (!texto || !socket || socket.readyState !== WebSocket.OPEN) return;
 
+    socket.send(JSON.stringify({
+      tipo: "mensagem",
+      texto
+    }));
+
+    inputMsg.value = "";
+    inputMsg.focus();
   }
 
   // --------------------------------------------------------
